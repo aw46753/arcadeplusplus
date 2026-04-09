@@ -12,28 +12,36 @@ file(GLOB_RECURSE ARCADEPP_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
 )
 
-add_executable(arcade++ ${ARCADEPP_SOURCES})
+add_executable(arcadepp ${ARCADEPP_SOURCES})
 
-target_include_directories(arcade++ PRIVATE
+target_include_directories(arcadepp PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/include"
 )
 
-target_compile_options(arcade++ PRIVATE
-    -Wall
-    -Wextra
-    -Wpedantic
-)
-
-find_package(raylib QUIET)
-
-if(raylib_FOUND)
-    target_link_libraries(arcade++ PRIVATE raylib)
+if(MSVC)
+    target_compile_options(arcadepp PRIVATE /W4)
 else()
-    find_package(PkgConfig REQUIRED)
-    pkg_check_modules(RAYLIB REQUIRED raylib)
-
-    target_include_directories(arcade++ PRIVATE ${RAYLIB_INCLUDE_DIRS})
-    target_link_directories(arcade++ PRIVATE ${RAYLIB_LIBRARY_DIRS})
-    target_link_libraries(arcade++ PRIVATE ${RAYLIB_LIBRARIES})
-    target_compile_options(arcade++ PRIVATE ${RAYLIB_CFLAGS_OTHER})
+    target_compile_options(arcadepp PRIVATE
+        -Wall
+        -Wextra
+        -Wpedantic
+    )
 endif()
+
+# First try to find an installed raylib package
+find_package(raylib CONFIG QUIET)
+
+# If not found, download and build it
+if(NOT raylib_FOUND)
+    include(FetchContent)
+
+    FetchContent_Declare(
+        raylib
+        GIT_REPOSITORY https://github.com/raysan5/raylib.git
+        GIT_TAG 5.5
+    )
+
+    FetchContent_MakeAvailable(raylib)
+endif()
+
+target_link_libraries(arcadepp PRIVATE raylib)
